@@ -10,8 +10,6 @@ from aiohttp import web
 from dotenv import load_dotenv
 
 from handlers import router
-from handlers.passport import passport_router
-
 
 load_dotenv()
 
@@ -63,7 +61,6 @@ def main():
     bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
     dp.include_router(router)
-    dp.include_router(passport_router)
 
     app = web.Application()
     app["bot"] = bot
