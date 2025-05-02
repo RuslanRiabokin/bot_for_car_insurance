@@ -1,7 +1,11 @@
 import os
 from aiogram import Router, F
+from aiogram.types import FSInputFile
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from services.mindee_service import extract_data_from_image_mock
+
+from services.policy_generator import generate_policy_pdf
+
 
 router = Router()
 
@@ -122,9 +126,31 @@ async def handle_reject(callback: CallbackQuery):
 # ✅ Користувач згоден з ціною
 @router.callback_query(F.data == "price_yes")
 async def handle_price_yes(callback: CallbackQuery):
-    user_state[callback.from_user.id] = "price_accepted"
+    user_id = callback.from_user.id
     await callback.message.edit_reply_markup()
     await callback.message.answer("✅ Дякую за підтвердження. Переходимо до генерації страхового полісу...")
+
+    # Тимчасові шляхи до зображень
+    temp_dir = os.path.join(os.getcwd(), "temp")
+    passport_path = os.path.join(temp_dir, f"passport_{user_id}.jpg")
+    reg_path = os.path.join(temp_dir, f"registration_{user_id}.jpg")
+
+    # Створення PDF
+    pdf_path = os.path.join(temp_dir, f"policy_{user_id}.pdf")
+    generate_policy_pdf(passport_path, reg_path, pdf_path)
+
+    # Надсилання PDF
+    pdf_input = FSInputFile(pdf_path)
+    await callback.message.answer_document(pdf_input, caption="📄 Ось ваш страховий поліс")
+
+    # Очищення
+    for file in [passport_path, reg_path, pdf_path]:
+        try:
+            os.remove(file)
+        except FileNotFoundError:
+            pass
+
+    user_state[user_id] = None
 
 # ❌ Користувач не згоден з ціною
 @router.callback_query(F.data == "price_no")
