@@ -16,6 +16,22 @@ def get_confirmation_keyboard():
         ]
     ])
 
+def get_price_keyboard():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Так, згоден", callback_data="price_yes"),
+            InlineKeyboardButton(text="❌ Ні", callback_data="price_no")
+        ]
+    ])
+
+def get_price_retry_keyboard():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Погоджуюсь", callback_data="price_yes"),
+            InlineKeyboardButton(text="❌ Завершити оформлення", callback_data="cancel_process")
+        ]
+    ])
+
 # 📥 Команда /start
 @router.message(F.text == "/start")
 async def start_command(message: Message):
@@ -78,8 +94,13 @@ async def handle_confirm(callback: CallbackQuery):
         except FileNotFoundError:
             pass
 
-    await callback.message.answer("✅ Дані підтверджено. Переходимо до наступного кроку...")
-
+    # Переход к подтверждению стоимости
+    user_state[user_id] = "waiting_price_confirmation"
+    await callback.message.answer(
+        "💵 Вартість автострахування становить <b>100 USD</b>.\nВи згодні з цією ціною?",
+        parse_mode="HTML",
+        reply_markup=get_price_keyboard()
+    )
 
 # ❌ Обработка отказа и просьба переслать документы заново
 @router.callback_query(F.data == "reject_data")
@@ -97,3 +118,30 @@ async def handle_reject(callback: CallbackQuery):
 
     await callback.message.edit_reply_markup()
     await callback.message.answer("❌ Зрозуміло. Будь ласка, знову надішліть фото паспорта 📷")
+
+# ✅ Користувач згоден з ціною
+@router.callback_query(F.data == "price_yes")
+async def handle_price_yes(callback: CallbackQuery):
+    user_state[callback.from_user.id] = "price_accepted"
+    await callback.message.edit_reply_markup()
+    await callback.message.answer("✅ Дякую за підтвердження. Переходимо до генерації страхового полісу...")
+
+# ❌ Користувач не згоден з ціною
+@router.callback_query(F.data == "price_no")
+async def handle_price_no(callback: CallbackQuery):
+    user_state[callback.from_user.id] = "price_rejected"
+    await callback.message.edit_reply_markup()
+    await callback.message.answer(
+        "😔 Вибачте, ціна <b>фіксована</b> і не підлягає зміні.\n\n"
+        "Бажаєте все ж погодитись чи завершити оформлення?",
+        parse_mode="HTML",
+        reply_markup=get_price_retry_keyboard()
+    )
+
+# ❌ Завершення оформлення
+@router.callback_query(F.data == "cancel_process")
+async def handle_cancel(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    user_state.pop(user_id, None)
+    await callback.message.edit_reply_markup()
+    await callback.message.answer("🚫 Оформлення страховки скасовано. Якщо передумаєте — напишіть /start.")
