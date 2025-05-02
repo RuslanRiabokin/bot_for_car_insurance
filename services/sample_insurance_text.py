@@ -1,10 +1,16 @@
-# sample_insurance_text.py
 from services.mindee_service import extract_data_from_image_mock
 
 
 def car_insurance_text(passport_path: str, reg_path: str) -> str:
     """
-    Генерує текст страхового полісу на основі оброблених документів.
+    Generates insurance policy text based on provided passport and vehicle registration images.
+
+    Args:
+        passport_path (str): Path to the passport image file.
+        reg_path (str): Path to the vehicle registration image file.
+
+    Returns:
+        str: Generated insurance policy text.
     """
     data = extract_data_from_image_mock(passport_path, reg_path)
     return generate_insurance_text(data)
@@ -12,7 +18,14 @@ def car_insurance_text(passport_path: str, reg_path: str) -> str:
 
 def generate_insurance_text(data: dict) -> str:
     """
-    Приймає словник з даними та формує текст страхового полісу.
+    Generates insurance policy text using extracted data.
+
+    Args:
+        data (dict): Dictionary containing extracted fields such as 'ПІБ',
+                     'Дата народження', 'Номер авто', and 'VIN'.
+
+    Returns:
+        str: Formatted insurance policy text.
     """
     pib = data.get("ПІБ", "Невідомо")
     birth_date = data.get("Дата народження", "Невідомо")

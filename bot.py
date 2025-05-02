@@ -27,7 +27,7 @@ logging.getLogger("fontTools").setLevel(logging.WARNING)
 
 
 async def set_bot_commands(bot: Bot):
-    """Set default bot commands."""
+    """Set the default list of bot commands shown in the menu."""
     commands = [
         BotCommand(command="/start", description="Start")
     ]
@@ -35,7 +35,7 @@ async def set_bot_commands(bot: Bot):
 
 
 async def on_startup(app: web.Application):
-    """Webhook: on server startup."""
+    """Execute tasks when the webhook server starts."""
     logging.info("Setting webhook...")
     await app["bot"].delete_webhook(drop_pending_updates=True)
     await app["bot"].set_webhook(
@@ -48,17 +48,18 @@ async def on_startup(app: web.Application):
 
 
 async def on_shutdown(app: web.Application):
-    """Webhook: on server shutdown."""
+    """Execute tasks when the webhook server shuts down."""
     logging.info("Removing webhook...")
     await app["bot"].delete_webhook()
 
 
 async def health_check(request):
-    """Health check endpoint."""
+    """Health check endpoint to confirm server is running."""
     return web.Response(status=200, text="Healthy")
 
 
 def main():
+    """Main entry point: initialize and run the webhook server."""
     bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
     dp.include_router(router)

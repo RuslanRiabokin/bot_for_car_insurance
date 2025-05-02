@@ -4,6 +4,17 @@ from datetime import datetime
 from services.mindee_service import extract_data_from_image_mock
 
 def generate_policy_pdf(passport_path: str, reg_path: str, output_path: str) -> str:
+    """
+        Generates a car insurance policy in PDF format based on provided document images.
+
+        Args:
+            passport_path (str): Path to the passport image file.
+            reg_path (str): Path to the vehicle registration image file.
+            output_path (str): Path where the generated PDF will be saved.
+
+        Returns:
+            str: Path to the generated PDF file.
+        """
     data = extract_data_from_image_mock(passport_path, reg_path)
 
     text = f"""
@@ -22,7 +33,7 @@ VIN: {data['VIN']}
 Підпис страхувальника: ___________________
 """.strip()
 
-    #font_path = "fonts/DejaVuSans.ttf"
+
     font_path = os.path.join(os.path.dirname(__file__), "DejaVuSans.ttf")
     pdf = FPDF()
     pdf.add_page()
