@@ -106,9 +106,10 @@ async def handle_confirm(callback: CallbackQuery):
         reply_markup=get_price_keyboard()
     )
 
-# ❌ Обработка отказа и просьба переслать документы заново
+
 @router.callback_query(F.data == "reject_data")
 async def handle_reject(callback: CallbackQuery):
+    """Processing refusal and request to resend documents"""
     user_id = callback.from_user.id
     user_state[user_id] = "waiting_for_passport"
 
@@ -123,9 +124,10 @@ async def handle_reject(callback: CallbackQuery):
     await callback.message.edit_reply_markup()
     await callback.message.answer("❌ Зрозуміло. Будь ласка, знову надішліть фото паспорта 📷")
 
-# ✅ Користувач згоден з ціною
+
 @router.callback_query(F.data == "price_yes")
-async def handle_price_yes(callback: CallbackQuery):
+async def confirm_policy_and_send_pdf(callback: CallbackQuery):
+    """Generates and sends the insurance policy PDF to the user"""
     user_id = callback.from_user.id
     await callback.message.edit_reply_markup()
     await callback.message.answer("✅ Дякую за підтвердження. Переходимо до генерації страхового полісу...")
@@ -140,8 +142,12 @@ async def handle_price_yes(callback: CallbackQuery):
     generate_policy_pdf(passport_path, reg_path, pdf_path)
 
     # Надсилання PDF
-    pdf_input = FSInputFile(pdf_path)
-    await callback.message.answer_document(pdf_input, caption="📄 Ось ваш страховий поліс")
+    if os.path.exists(pdf_path):
+        pdf_input = FSInputFile(pdf_path)
+        await callback.message.answer_document(pdf_input, caption="📄 Ось ваш страховий поліс")
+    else:
+        await callback.message.answer(
+            "Помилка: не вдалося знайти PDF файл страхового полісу. Спробуйте ще раз або зверніться до підтримки.")
 
     # Очищення
     for file in [passport_path, reg_path, pdf_path]:

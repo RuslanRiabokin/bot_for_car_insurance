@@ -23,6 +23,7 @@ WEB_SERVER_HOST = os.getenv("WEB_SERVER_HOST", "0.0.0.0")
 
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("fontTools").setLevel(logging.WARNING)
 
 
 async def set_bot_commands(bot: Bot):
