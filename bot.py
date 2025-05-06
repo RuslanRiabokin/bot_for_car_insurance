@@ -8,18 +8,11 @@ from aiogram.types import BotCommand
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 from dotenv import load_dotenv
+from config import (BOT_TOKEN, BASE_WEBHOOK_URL, WEBHOOK_SECRET,
+                    WEBHOOK_PATH, WEBHOOK_PORT,WEB_SERVER_HOST)
+from ai_handler import router
 
-from handlers import router
 
-load_dotenv()
-
-
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-BASE_WEBHOOK_URL = os.getenv("BASE_WEBHOOK_URL")
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
-WEBHOOK_PATH = os.getenv("WEBHOOK_PATH", "/webhook")
-WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", 5000))
-WEB_SERVER_HOST = os.getenv("WEB_SERVER_HOST", "0.0.0.0")
 
 
 logging.basicConfig(level=logging.INFO)
@@ -29,7 +22,9 @@ logging.getLogger("fontTools").setLevel(logging.WARNING)
 async def set_bot_commands(bot: Bot):
     """Set the default list of bot commands shown in the menu."""
     commands = [
-        BotCommand(command="/start", description="Start")
+        BotCommand(command="/start", description="Start"),
+        BotCommand(command="/ask", description="ШІ помічник")
+
     ]
     await bot.set_my_commands(commands)
 
