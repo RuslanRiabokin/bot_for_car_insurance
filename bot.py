@@ -22,9 +22,7 @@ logging.getLogger("fontTools").setLevel(logging.WARNING)
 async def set_bot_commands(bot: Bot):
     """Set the default list of bot commands shown in the menu."""
     commands = [
-        BotCommand(command="/start", description="Start"),
-        BotCommand(command="/ask", description="ШІ помічник")
-
+        BotCommand(command="start", description="ШІ помічник")
     ]
     await bot.set_my_commands(commands)
 

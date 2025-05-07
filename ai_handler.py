@@ -6,7 +6,7 @@ from ai_provider import ask_ai
 router = Router()
 user_states = {}
 
-@router.message(Command("ask"))
+@router.message(Command("start"))
 async def cmd_ask_ai(message: types.Message):
     user_states[message.from_user.id] = "waiting_ai_question"
     await message.answer(
@@ -19,7 +19,7 @@ async def handle_ai_question(message: types.Message):
     user_id = message.from_user.id
     if user_states.get(user_id) == "waiting_ai_question":
         question = message.text
-        await message.answer("🤖 Думаю над відповіддю...")
+        await message.answer("🤖 Бот для автострахування думає над відповіддю...")
 
         try:
             response = ask_ai(question)
