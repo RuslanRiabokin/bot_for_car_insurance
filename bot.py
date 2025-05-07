@@ -1,5 +1,4 @@
 import logging
-import os
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -7,13 +6,10 @@ from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import BotCommand
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
-from dotenv import load_dotenv
-from config import (BOT_TOKEN, BASE_WEBHOOK_URL, WEBHOOK_SECRET,
-                    WEBHOOK_PATH, WEBHOOK_PORT,WEB_SERVER_HOST)
+
 from ai_handler import router
-
-
-
+from config import (BOT_TOKEN, BASE_WEBHOOK_URL, WEBHOOK_SECRET,
+                    WEBHOOK_PATH, WEBHOOK_PORT, WEB_SERVER_HOST)
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("fontTools").setLevel(logging.WARNING)

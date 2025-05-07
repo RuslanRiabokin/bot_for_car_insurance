@@ -1,10 +1,7 @@
-import os
-
-from dotenv import load_dotenv
-from openai import OpenAI, AzureOpenAI
+from openai import AzureOpenAI
 from openai.types.chat import ChatCompletionMessageParam
-from config import AZURE_OPENAI_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT_ID
 
+from config import AZURE_OPENAI_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT_ID
 
 
 def ask_ai(question: str) -> str:
