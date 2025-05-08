@@ -7,10 +7,14 @@ from aiogram.types import BotCommand
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 
-from ai_handler import router
-#from bbbbb import router
+#from ai_handler import router
+from aaaaaaaaaaaaaaa import router
 from config import (BOT_TOKEN, BASE_WEBHOOK_URL, WEBHOOK_SECRET,
                     WEBHOOK_PATH, WEBHOOK_PORT, WEB_SERVER_HOST)
+from aiogram.fsm.storage.memory import MemoryStorage
+
+dp = Dispatcher(storage=MemoryStorage())
+
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("fontTools").setLevel(logging.WARNING)
@@ -51,7 +55,7 @@ async def health_check(request):
 def main():
     """Main entry point: initialize and run the webhook server."""
     bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp = Dispatcher()
+    dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(router)
 
     app = web.Application()

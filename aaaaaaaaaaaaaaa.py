@@ -1,65 +1,63 @@
-import os
-from uuid import uuid4
-from aiogram import Router, F, types
+from aiogram import Router, F
+from aiogram.types import Message
+from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
+from aiogram.enums.content_type import ContentType
 
-from ai_provider import ask_ai
+from ai_states import AIAssistantState
+from ai_provider_2 import ask_ai
 
 router = Router()
-TEMP_DIR = "temp"
-os.makedirs(TEMP_DIR, exist_ok=True)
 
-# Примітивне зберігання стану (в пам'яті)
-user_states = {}  # user_id -> {"docs_received": 0}
-
-def get_user_state(user_id: int) -> dict:
-    if user_id not in user_states:
-        user_states[user_id] = {"docs_received": 0}
-    return user_states[user_id]
 
 @router.message(Command("start"))
-async def cmd_start(message: types.Message):
-    user_id = message.from_user.id
-    user_states[user_id] = {"docs_received": 0}
+async def cmd_start(message: Message, state: FSMContext):
+    await state.clear()
+    await state.set_state(AIAssistantState.waiting_for_documents)
+    await state.update_data(documents=[])  # створюємо список документів
+    await state.update_data(chat_history=[])  # очищаємо історію спілкування
+    await message.answer(
+        "👋 Привіт! Я допоможу тобі з автострахуванням.\n\n"
+        "Будь ласка, надішли фото паспорта 📄"
+    )
 
-    response = ask_ai("Користувач розпочав діалог. Привітайся та попроси надіслати документи.")
-    await message.answer(response)
 
+@router.message(F.content_type.in_({ContentType.PHOTO, ContentType.DOCUMENT}))
+async def handle_documents(message: Message, state: FSMContext):
+    data = await state.get_data()
+    documents = data.get("documents", [])
 
+    # Определяем тип файла и сохраняем file_id
+    file_id = (
+        message.document.file_id if message.document
+        else message.photo[-1].file_id
+    )
+    documents.append(file_id)
+    await state.update_data(documents=documents)
 
-@router.message(F.photo | F.document)
-async def handle_documents(message: types.Message):
-    user_id = message.from_user.id
-    file = message.photo[-1] if message.photo else message.document
-    file_name = f"{user_id}_{uuid4().hex}.jpg"
-    path = os.path.join(TEMP_DIR, file_name)
-    await message.bot.download(file, destination=path)
-
-    # Отримуємо або ініціалізуємо стан
-    state = user_states.setdefault(user_id, {"docs_received": 0})
-    state["docs_received"] += 1
-
-    # Визначаємо, яке це фото
-    if state["docs_received"] == 1:
-        prompt = "Користувач надіслав фото паспорта. Подякуй і попроси техпаспорт."
-    elif state["docs_received"] == 2:
-        prompt = (
-            "Користувач раніше надіслав паспорт. Тепер він надіслав фото техпаспорта. "
-            "Подякуй за техпаспорт і скажи, що зараз витягуєш інформацію з обох документів для оформлення автострахування."
-        )
+    # Генерируем сообщение для AI
+    if len(documents) == 1:
+        user_msg = "Я надіслав фото паспорта."
+    elif len(documents) == 2:
+        user_msg = "Я надіслав фото техпаспорта."
+        await state.set_state(AIAssistantState.documents_received)
     else:
-        prompt = "Користувач надіслав ще одне зображення після обох документів. Подякуй і скажи, що документи вже обробляються."
+        user_msg = "Я надіслав ще одне фото."
 
-    response = ask_ai(prompt)
-    await message.answer(response)
+    # Получаем ответ от AI и отправляем пользователю
+    ai_reply = await ask_ai(user_msg, state)
+    await message.answer(ai_reply)
 
 
 @router.message(F.text)
-async def handle_text(message: types.Message):
-    await message.answer("🤖 Обробляю ваше повідомлення AI...")
-    try:
-        response = ask_ai(message.text)
-    except Exception as e:
-        await message.answer(f"❌ Помилка при зверненні до AI: {e}")
-        return
-    await message.answer(response.strip())
+async def handle_text(message: Message, state: FSMContext):
+    current_state = await state.get_state()
+
+    if current_state == AIAssistantState.waiting_for_documents:
+        ai_reply = await ask_ai(message.text, state)
+        await message.answer(
+            f"{ai_reply}\n\n📎 Поки що надішли фото паспорта та техпаспорта, щоб я міг допомогти краще."
+        )
+    else:
+        ai_reply = await ask_ai(message.text, state)
+        await message.answer(ai_reply)
