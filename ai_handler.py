@@ -47,7 +47,6 @@ async def handle_documents(message: Message, state: FSMContext):
         }
         await state.update_data(extracted_info=extracted_info)
 
-        # Формуємо повідомлення з даними, які треба підтвердити
         user_msg_2 = (
             "Ось дані, які я витягнув із ваших документів. Будь ласка, перевірте їх уважно.\n\n"
             f"ПІБ: {extracted_info['ПІБ']}\n"
@@ -62,8 +61,6 @@ async def handle_documents(message: Message, state: FSMContext):
         ai_reply_2 = await ask_ai(user_msg_2, state)
         await message.answer(ai_reply_2)
 
-
-
     else:
         user_msg = "Я надіслав ще одне фото."
         ai_reply = await ask_ai(user_msg, state)
@@ -75,20 +72,44 @@ async def handle_text(message: Message, state: FSMContext):
     current_state = await state.get_state()
     text = message.text.strip().lower()
 
-    # Якщо вже отримано 2 документи і чекаємо підтвердження
     if current_state == AIAssistantState.documents_received:
         if "підтверджую" in text or "все правильно" in text:
-            await message.answer("✅ Дякую за підтвердження! Тепер я можу перейти до оформлення поліса.")
-            await ask_ai("Користувач підтвердив коректність даних.", state)
+            await state.set_state(AIAssistantState.waiting_price_confirmation)
+            ai_reply = await ask_ai("Користувач підтвердив правильність даних.", state)
+            await message.answer(ai_reply)
             return
 
-        elif "хочу змінити" in text or "неправильно" in text or "помилка" in text:
+        elif "неправильно" in text or "помилка" in text:
             await message.answer("❌ Зрозуміло. Будь ласка, надішліть фото паспорта ще раз.")
             await state.set_state(AIAssistantState.waiting_for_documents)
             await state.update_data(documents=[], chat_history=[])
             await ask_ai("Користувач повідомив про помилку в даних. Починаю збір документів заново.", state)
             return
 
-    # Звичайне повідомлення
+    elif current_state == AIAssistantState.waiting_price_confirmation:
+        if "не згоден" in text or "не підходить" in text or "дорого" in text:
+            await message.answer(
+                "😔 На жаль, вартість у розмірі 100 доларів США є фіксованою.\n"
+                "Інших варіантів наразі немає.\n\n"
+                "Хочете завершити оформлення страхування чи все ж погоджуєтесь на цю ціну?"
+            )
+            await ask_ai(
+                "Користувач не згоден з ціною. Поясни, що ціна фіксована, і запропонуй або погодитися, або завершити оформлення.",
+                state
+            )
+            return
+
+        if "згоден" in text or "підходить" in text or "добре" in text or "погоджуюсь" in text or "гаразд" in text:
+            await state.set_state(AIAssistantState.policy_ready)
+            await ask_ai("Користувач погодився на ціну. Переходь до етапу оформлення страхового полісу.", state)
+            await message.answer("✅ Чудово! Тепер я сформую ваш страховий поліс. Очікуйте трохи...")
+            return
+
+        # Проміжна відповідь на будь-який інший текст
+        ai_reply = await ask_ai(f"Користувач відповів на пропозицію щодо вартості: «{message.text}».", state)
+        await message.answer(ai_reply)
+        return
+
+    # Загальний fallback: діалог з AI
     ai_reply = await ask_ai(message.text, state)
     await message.answer(ai_reply)
