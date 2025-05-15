@@ -10,6 +10,7 @@ from aiogram.types import Message, FSInputFile
 
 from ai_provider import ask_ai, reset_chat_history
 from ai_states import AIAssistantState
+from services.pdf_generator import generate_insurance_pdf
 
 router = Router()
 
@@ -82,20 +83,22 @@ async def handle_text(message: Message, state: FSMContext):
         await send_pdf(message, state)
 
 async def send_pdf(message: Message, state: FSMContext):
-    pdf_path = "temp/polis.pdf"
-    full_path = os.path.abspath(pdf_path)
-
     logging.info(f"[DEBUG] Входжу у send_pdf()")
-    logging.info(f"[DEBUG] Повний шлях до PDF: {full_path}")
-    logging.info(f"[DEBUG] Файл існує: {os.path.exists(pdf_path)}")
+
+    data = await state.get_data()
+    extracted_info = data.get("extracted_info")
+
+    if not extracted_info:
+        await message.answer("⚠️ Дані для полісу відсутні. Спробуйте спочатку.")
+        return
+
+    # Генеруємо поліс у тимчасовий файл
+    pdf_path = generate_insurance_pdf(extracted_info)
+    logging.info(f"[DEBUG] PDF згенеровано: {pdf_path}")
 
     try:
-        if not os.path.exists(pdf_path):
-            await message.answer(f"❗ PDF не знайдено за шляхом: {full_path}", parse_mode="Markdown")
-            return
-
-        await message.answer("📤 Знайшов файл, надсилаю...")
         input_file = FSInputFile(pdf_path)
+        await message.answer("📤 Надсилаю ваш страховий поліс...")
         await message.answer_document(document=input_file, caption="📄 Ваш страховий поліс готовий!")
 
     except Exception as e:
@@ -103,7 +106,11 @@ async def send_pdf(message: Message, state: FSMContext):
         await message.answer(f"❗ Помилка при надсиланні PDF:\n{str(e)}", parse_mode="Markdown")
 
     finally:
-        await reset_chat_history(state)  # очищаем историю AI
-        await state.clear()  # очищаем всё состояние
-        logging.info("[DEBUG] Стан очищено")
+        # Видаляємо тимчасовий файл
+        if os.path.exists(pdf_path):
+            os.remove(pdf_path)
+            logging.info(f"[DEBUG] Тимчасовий PDF видалено: {pdf_path}")
 
+        await reset_chat_history(state)
+        await state.clear()
+        logging.info("[DEBUG] Стан очищено")
