@@ -17,6 +17,9 @@ router = Router()
 
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
+    """
+        Handles the /start command. Initializes user state and prompts for documents.
+        """
     await state.clear()
     await state.set_state(AIAssistantState.waiting_for_documents)
     await state.update_data(documents=[], chat_history=[])
@@ -28,6 +31,10 @@ async def cmd_start(message: Message, state: FSMContext):
 
 @router.message(F.content_type.in_({ContentType.PHOTO, ContentType.DOCUMENT}))
 async def handle_documents(message: Message, state: FSMContext):
+    """
+        Handles photo or document uploads from the user.
+        Once two documents are received, mock data is extracted and shown for confirmation.
+        """
     data = await state.get_data()
     documents = data.get("documents", [])
 
@@ -73,16 +80,24 @@ async def handle_documents(message: Message, state: FSMContext):
 
 @router.message(F.text)
 async def handle_text(message: Message, state: FSMContext):
+    """
+        Handles user text messages and delegates them to the AI.
+        If AI suggests generating an insurance policy, triggers PDF creation.
+        """
     text = message.text.strip()
 
     ai_reply = await ask_ai(text, state)
     await message.answer(ai_reply)
 
-    # Проверяем, содержит ли ответ фразу о формировании полісу
+
     if re.search(r"формую.*страховий поліс", ai_reply.lower()):
         await send_pdf(message, state)
 
 async def send_pdf(message: Message, state: FSMContext):
+    """
+        Generates and sends the insurance policy PDF to the user.
+        Cleans up temporary files and resets conversation state afterward.
+        """
     logging.info(f"[DEBUG] Входжу у send_pdf()")
 
     data = await state.get_data()
@@ -92,7 +107,7 @@ async def send_pdf(message: Message, state: FSMContext):
         await message.answer("⚠️ Дані для полісу відсутні. Спробуйте спочатку.")
         return
 
-    # Генеруємо поліс у тимчасовий файл
+
     pdf_path = generate_insurance_pdf(extracted_info)
     logging.info(f"[DEBUG] PDF згенеровано: {pdf_path}")
 
@@ -106,7 +121,7 @@ async def send_pdf(message: Message, state: FSMContext):
         await message.answer(f"❗ Помилка при надсиланні PDF:\n{str(e)}", parse_mode="Markdown")
 
     finally:
-        # Видаляємо тимчасовий файл
+
         if os.path.exists(pdf_path):
             os.remove(pdf_path)
             logging.info(f"[DEBUG] Тимчасовий PDF видалено: {pdf_path}")

@@ -10,4 +10,3 @@ pytest.ini*.pyc
 /azure.txt
 /app.
 *.pyc
-temp/
