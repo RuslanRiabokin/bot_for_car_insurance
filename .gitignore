@@ -10,3 +10,4 @@ pytest.ini*.pyc
 /azure.txt
 /app.
 *.pyc
+a_requirements.txt
