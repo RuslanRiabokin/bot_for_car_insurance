@@ -11,3 +11,4 @@ pytest.ini*.pyc
 /app.
 *.pyc
 a_requirements.txt
+*.jpg

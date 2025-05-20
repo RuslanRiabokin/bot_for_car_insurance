@@ -3,3 +3,10 @@ aiohttp==3.11.18
 fpdf2==2.8.3
 openai==1.77.0
 python-dotenv==1.1.0
+mindee==4.22.0
+pypdfium2==4.30.0
+pytz==2025.2
+
+
+pytesseract~=0.3.13
+pillow~=11.2.1
