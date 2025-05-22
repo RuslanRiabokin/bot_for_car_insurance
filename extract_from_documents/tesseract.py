@@ -1,6 +1,6 @@
 import pytesseract
 
-from PIL import Image, ImageEnhance, ImageFilter
+from PIL import Image, ImageFilter
 
 def foto():
     pytesseract.pytesseract.tesseract_cmd = r'D:\Program Files\Tesseract-OCR\tesseract.exe'

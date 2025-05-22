@@ -12,3 +12,4 @@ pytest.ini*.pyc
 *.pyc
 a_requirements.txt
 *.jpg
+*.PNG

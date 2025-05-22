@@ -1,5 +1,5 @@
 from openai import AzureOpenAI
-from extract_data_from_documents.tesseract import foto
+from extract_from_documents.tesseract import foto
 from config import (
     AZURE_OPENAI_KEY,
     AZURE_OPENAI_ENDPOINT,
@@ -13,34 +13,61 @@ client = AzureOpenAI(
     azure_endpoint=AZURE_OPENAI_ENDPOINT,
 )
 
-# Получаем OCR текст
 ocr_text = foto()
 
-# Промпт к GPT
-prompt = f"""
-Ось фрагмент тексту, розпізнаного з українського паспорта:
-\"\"\" 
-{ocr_text} 
-\"\"\" 
 
-Будь ласка, витягни:
-- Повне ім’я (ПІБ) у форматі: "Прізвище Ім’я" або "Прізвище Ім’я По батькові", якщо є
-- Дату народження (дд.мм.рррр)
+check_passport_prompt = f"""
+Ось фрагмент тексту, розпізнаного з документа:
+\"\"\"
+{ocr_text}
+\"\"\"
 
-Відповідь поверни у форматі JSON з такими ключами:
-"ПІБ", "Дата народження"
+Скажи лише "yes", якщо це український паспорт. Якщо ні — скажи "not".
+Відповідь: тільки "yes" або "not".
 """
 
-# Отправка запроса к GPT (используем модель gpt-4 или gpt-35-turbo)
-response = client.chat.completions.create(
+check_response = client.chat.completions.create(
     model=AZURE_OPENAI_DEPLOYMENT_ID,
     messages=[
-        {"role": "system", "content": "Ти помічник, який витягує дані з OCR тексту паспорта."},
-        {"role": "user", "content": prompt}
+        {"role": "system", "content": "Ти помічник, який визначає, чи це український паспорт."},
+        {"role": "user", "content": check_passport_prompt}
     ],
     temperature=0.1,
-    max_tokens=300
+    max_tokens=10
 )
 
-# Печатаем результат
-print(response.choices[0].message.content)
+is_passport = check_response.choices[0].message.content.strip().lower()
+
+
+if is_passport == "yes":
+    extract_data_prompt = f"""
+    Ось фрагмент тексту, розпізнаного з українського паспорта:
+    \"\"\"
+    {ocr_text}
+    \"\"\"
+
+    Витягни:
+    - Повне ім’я (ПІБ) у форматі: "Прізвище Ім’я" або "Прізвище Ім’я По батькові", якщо є
+    - Дату народження у форматі: дд.мм.рррр
+
+    Формат відповіді:
+    {{
+      "ПІБ": "...",
+      "Дата народження": "..."
+    }}
+    """
+
+    extract_response = client.chat.completions.create(
+        model=AZURE_OPENAI_DEPLOYMENT_ID,
+        messages=[
+            {"role": "system", "content": "Ти помічник, який витягує дані з OCR тексту паспорта."},
+            {"role": "user", "content": extract_data_prompt}
+        ],
+        temperature=0.1,
+        max_tokens=300
+    )
+
+    print(extract_response.choices[0].message.content)
+
+else:
+    print("Це не схоже на паспорт. Будь ласка, надішліть фото українського паспорта для обробки.")
