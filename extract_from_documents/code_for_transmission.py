@@ -1,5 +1,5 @@
 from openai import AzureOpenAI
-from extract_from_documents.tesseract import foto
+from extract_from_documents.tesseract import foto_from_folder
 from config import (
     AZURE_OPENAI_KEY,
     AZURE_OPENAI_ENDPOINT,
@@ -13,7 +13,7 @@ client = AzureOpenAI(
     azure_endpoint=AZURE_OPENAI_ENDPOINT,
 )
 
-ocr_text = foto()
+ocr_text = foto_from_folder()
 
 
 check_passport_prompt = f"""
